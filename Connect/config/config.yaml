@@ -1,0 +1,43 @@
+# Connect System Configuration
+
+sync:
+  # MailAPI SavedDocuments directory
+  mail_documents_dir: "../MailAPI/SavedDocuments"
+  
+  # Enable file watcher for real-time sync
+  enable_watcher: true
+  
+  # Sync interval for periodic sync (seconds)
+  sync_interval: 300  # 5 minutes
+
+minecontext:
+  # MineContext Web API
+  api_url: "http://localhost:8765"
+  auth_token: "default_token"
+  
+  # Document import settings
+  document_type: "email"
+  auto_tag: true
+  tags: "email,mail_api,imported"
+
+reply:
+  # Reply system directory
+  reply_dir: "../Reply"
+  
+  # Auto-trigger weekly report
+  auto_trigger: true
+  
+  # Trigger schedule (cron format)
+  trigger_schedule:
+    day_of_week: "sun"  # Sunday
+    hour: 21
+    minute: 0
+
+data:
+  # Processed files tracking
+  processed_files: "data/processed_files.json"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/connect.log"

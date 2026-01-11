@@ -1,0 +1,32 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensitive configuration
+config/.env
+
+# Saved documents (optional - uncomment if you don't want to track saved emails)
+# SavedDocuments/
+# !SavedDocuments/.gitkeep
+
+# Logs
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db

@@ -1,0 +1,37 @@
+# Email Server Configuration
+
+# IMAP Server Settings
+imap:
+  # Gmail
+  gmail:
+    server: imap.gmail.com
+    port: 993
+    use_ssl: true
+    
+  # Outlook/Hotmail
+  outlook:
+    server: outlook.office365.com
+    port: 993
+    use_ssl: true
+    
+  # QQ Mail
+  qq:
+    server: imap.qq.com
+    port: 993
+    use_ssl: true
+    
+  # 163 Mail
+  163:
+    server: imap.163.com
+    port: 993
+    use_ssl: true
+
+# Default settings
+default_provider: gmail
+connection_timeout: 30
+max_retries: 3
+
+# Email filtering settings
+filter:
+  max_emails_per_request: 100
+  default_days_back: 7

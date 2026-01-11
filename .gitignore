@@ -1,0 +1,92 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables and sensitive files
+.env
+*.env
+!.env.example
+
+# API Keys and Credentials
+config/.env
+MailAPI/config/.env
+Reply/config/.env
+Connect/config/.env
+
+# Data and cache
+*.db
+*.sqlite
+*.sqlite3
+data/
+cache/
+temp/
+tmp/
+
+# MineContext specific
+MineContext-main/persist/
+MineContext-main/.venv/
+MineContext-main/logs/
+MineContext-main/data/
+
+# Generated documents
+MailAPI/SavedDocuments/*.md
+!MailAPI/SavedDocuments/.gitkeep
+Reply/ReplyDocuments/*.md
+!Reply/ReplyDocuments/.gitkeep
+
+# Processed files tracking
+Connect/data/processed_files.json
+
+# Node modules
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS files
+Thumbs.db
+.DS_Store

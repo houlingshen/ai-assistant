@@ -1,0 +1,20 @@
+# Connect System Dependencies
+
+# File monitoring
+watchdog>=3.0.0
+
+# HTTP requests
+requests>=2.31.0
+
+# Scheduling
+APScheduler>=3.10.0
+
+# Configuration management
+python-dotenv>=1.0.0
+PyYAML>=6.0
+
+# Date/Time
+pytz>=2024.1
+
+# Logging (built-in)
+# JSON handling (built-in)

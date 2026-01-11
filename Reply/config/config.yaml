@@ -1,0 +1,35 @@
+# Weekly Report System Configuration
+
+data_collection:
+  # MineContext Web API configuration
+  minecontext_api_url: "http://localhost:8765"  # MineContext web server URL
+  minecontext_auth_token: "default_token"       # API authentication token
+  sync_interval: 3600  # seconds
+
+report_generation:
+  output_dir: "ReplyDocuments"
+  format: "markdown"
+  include_sections:
+    - daily_summaries
+    - todos
+    - tips
+    - activities
+    - next_week_plan
+
+email:
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587
+  use_html: true
+  attach_markdown: true
+
+scheduler:
+  weekly_report:
+    day_of_week: "sun"  # Sunday
+    hour: 20
+    minute: 0
+  enabled: true
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/reply.log"

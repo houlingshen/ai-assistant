@@ -24,21 +24,21 @@ document_processing:
   text_threshold_per_page: 50 # Scanned document threshold: pages with fewer characters than this value are considered scanned documents (requires VLM)
 
 vlm_model:
-  base_url: "${LLM_BASE_URL}"
-  api_key: "${LLM_API_KEY}"
-  model: "${LLM_MODEL}"
-  provider: ""
+  base_url: "https://api.deepseek.com"
+  api_key: "sk-ab13ba54df7d4cc0a93fa7523fcc0068"
+  model: "deepseek-chat"
+  provider: "OpenAI"
 
 embedding_model:
-  base_url: "${EMBEDDING_BASE_URL}"
-  api_key: "${EMBEDDING_API_KEY}"
-  model: "${EMBEDDING_MODEL}"
-  provider: ""
+  base_url: "https://api.deepseek.com"
+  api_key: "sk-ab13ba54df7d4cc0a93fa7523fcc0068"
+  model: "deepseek-chat"
+  provider: "OpenAI"
   output_dim: 2048
 
 # Context capture module
 capture:
-  enabled: true
+  enabled: false
   # Screenshot capture
   screenshot:
     enabled: false

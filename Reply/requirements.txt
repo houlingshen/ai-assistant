@@ -1,0 +1,20 @@
+# Weekly Report System Dependencies
+
+# Scheduling
+APScheduler>=3.10.0
+
+# Configuration Management
+python-dotenv>=1.0.0
+PyYAML>=6.0
+
+# Markdown Processing
+markdown2>=2.4.0
+
+# Date/Time
+pytz>=2024.1
+
+# HTTP Requests
+requests>=2.31.0
+
+# Email (built-in smtplib and email modules are used)
+# Database access via HTTP API
