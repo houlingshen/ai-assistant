@@ -84,23 +84,8 @@ class WeeklyReportGenerator:
         md_lines.append("---")
         md_lines.append("")
         
-        # Daily Summaries
+        # Daily Summaries section removed per user request
         daily_reports = week_data.get('daily_reports', [])
-        if daily_reports:
-            md_lines.append("## 每日总结 (Daily Summaries)")
-            md_lines.append("")
-            for report in daily_reports:
-                report_date = datetime.fromisoformat(report['created_at'].replace('Z', '+00:00'))
-                day_name = report_date.strftime('%A')
-                md_lines.append(f"### {report_date.strftime('%Y-%m-%d')} - {day_name}")
-                md_lines.append("")
-                if report['content']:
-                    md_lines.append(report['content'])
-                else:
-                    md_lines.append("*No summary available for this day.*")
-                md_lines.append("")
-            md_lines.append("---")
-            md_lines.append("")
         
         # Weekly Highlights
         md_lines.append("## 本周亮点 (Weekly Highlights)")
