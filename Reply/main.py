@@ -18,6 +18,7 @@ from src.data_collector import MineContextDataCollector
 from src.report_generator import WeeklyReportGenerator
 from src.email_sender import EmailSender
 from src.scheduler import WeeklyReportScheduler
+from src.ebbinghaus_reminder import EbbinghausReviewReminder
 from src.utils import setup_logging, load_config, get_next_monday, get_current_week_monday
 
 
@@ -131,9 +132,21 @@ def main():
         
         data_collector = MineContextDataCollector(api_url=api_url, auth_token=auth_token)
         
+        # Ebbinghaus Review Reminder (optional)
+        enable_review_reminder = config.get('review_reminder', {}).get('enabled', True)
+        ebbinghaus_reminder = None
+        
+        if enable_review_reminder:
+            try:
+                storage_path = config.get('review_reminder', {}).get('storage_path', 'data/review_schedule.json')
+                ebbinghaus_reminder = EbbinghausReviewReminder(data_collector, storage_path)
+                logger.info("✓ Ebbinghaus review reminder enabled")
+            except Exception as e:
+                logger.warning(f"Failed to initialize review reminder: {e}")
+        
         # Report generator
         output_dir = config.get('report_generation', {}).get('output_dir', 'ReplyDocuments')
-        report_generator = WeeklyReportGenerator(data_collector, output_dir)
+        report_generator = WeeklyReportGenerator(data_collector, output_dir, ebbinghaus_reminder)
         
         # Email sender
         email_config = config.get('email', {})

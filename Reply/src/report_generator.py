@@ -18,17 +18,20 @@ logger = logging.getLogger(__name__)
 class WeeklyReportGenerator:
     """Generate weekly report in Markdown format"""
     
-    def __init__(self, data_collector, output_dir: str = "ReplyDocuments"):
+    def __init__(self, data_collector, output_dir: str = "ReplyDocuments", 
+                 ebbinghaus_reminder=None):
         """
         Initialize report generator
         
         Args:
             data_collector: Instance of MineContextDataCollector
             output_dir: Directory to save generated reports
+            ebbinghaus_reminder: Optional EbbinghausReviewReminder instance
         """
         self.data_collector = data_collector
         self.output_dir = Path(__file__).parent.parent / output_dir
         self.output_dir.mkdir(exist_ok=True)
+        self.ebbinghaus_reminder = ebbinghaus_reminder
         logger.info(f"Initialized report generator, output dir: {self.output_dir}")
     
     def generate_weekly_report(self, week_start_date: datetime) -> str:
@@ -245,6 +248,21 @@ class WeeklyReportGenerator:
         
         md_lines.append("---")
         md_lines.append("")
+        
+        # Ebbinghaus Review Reminder (if enabled)
+        if self.ebbinghaus_reminder:
+            try:
+                # Scan for new learning content
+                self.ebbinghaus_reminder.scan_minecontext_for_learning_content(days_back=7)
+                
+                # Generate review reminder section
+                review_text = self.ebbinghaus_reminder.generate_review_reminder_text()
+                md_lines.append(review_text)
+                md_lines.append("---")
+                md_lines.append("")
+                logger.info("Added Ebbinghaus review reminder to report")
+            except Exception as e:
+                logger.error(f"Failed to add review reminder: {e}")
         
         # Footer
         md_lines.append("*此报告由 AI Assistant 自动生成*")

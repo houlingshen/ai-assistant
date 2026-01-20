@@ -15,6 +15,14 @@ report_generation:
     - tips
     - activities
     - next_week_plan
+    - ebbinghaus_review  # Ebbinghaus forgetting curve review reminders
+
+# Ebbinghaus Review Reminder Settings
+review_reminder:
+  enabled: true  # Enable/disable review reminders
+  storage_path: "data/review_schedule.json"  # Where to store review schedules
+  auto_scan_days: 7  # Days to look back for new learning content
+  review_intervals: [1, 2, 4, 7, 15, 30]  # Standard Ebbinghaus intervals (days)
 
 email:
   smtp_server: "smtp.gmail.com"
