@@ -24,6 +24,16 @@ review_reminder:
   auto_scan_days: 7  # Days to look back for new learning content
   review_intervals: [1, 2, 4, 7, 15, 30]  # Standard Ebbinghaus intervals (days)
 
+# Language Settings
+language:
+  # Report language (zh, en)
+  # zh = Chinese (中文)
+  # en = English
+  default: "en"
+  
+  # Available languages
+  supported: ["zh", "en"]
+
 email:
   smtp_server: "smtp.gmail.com"
   smtp_port: 587

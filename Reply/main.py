@@ -55,6 +55,12 @@ Examples:
   
   # Check current schedule
   python3 main.py --show-schedule
+  
+  # Generate report in English
+  python3 main.py --mode once --language en
+  
+  # Generate report in Chinese (default)
+  python3 main.py --mode once --language zh
         """
     )
     
@@ -124,6 +130,14 @@ Examples:
         '--show-schedule',
         action='store_true',
         help='Show current schedule configuration and exit'
+    )
+    
+    # Language option
+    parser.add_argument(
+        '--language',
+        '--lang',
+        choices=['zh', 'en'],
+        help='Report language: zh (Chinese) or en (English)'
     )
     
     return parser.parse_args()
@@ -208,7 +222,9 @@ def main():
         
         # Report generator
         output_dir = config.get('report_generation', {}).get('output_dir', 'ReplyDocuments')
-        report_generator = WeeklyReportGenerator(data_collector, output_dir, ebbinghaus_reminder)
+        language = args.language or config.get('language', {}).get('default', 'zh')
+        logger.info(f"Report language: {language}")
+        report_generator = WeeklyReportGenerator(data_collector, output_dir, ebbinghaus_reminder, language)
         
         # Email sender
         email_config = config.get('email', {})

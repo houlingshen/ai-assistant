@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any, List
 import json
+from src.i18n import I18n
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class WeeklyReportGenerator:
     """Generate weekly report in Markdown format"""
     
     def __init__(self, data_collector, output_dir: str = "ReplyDocuments", 
-                 ebbinghaus_reminder=None):
+                 ebbinghaus_reminder=None, language: str = 'zh'):
         """
         Initialize report generator
         
@@ -27,12 +28,14 @@ class WeeklyReportGenerator:
             data_collector: Instance of MineContextDataCollector
             output_dir: Directory to save generated reports
             ebbinghaus_reminder: Optional EbbinghausReviewReminder instance
+            language: Report language ('zh' or 'en')
         """
         self.data_collector = data_collector
         self.output_dir = Path(__file__).parent.parent / output_dir
         self.output_dir.mkdir(exist_ok=True)
         self.ebbinghaus_reminder = ebbinghaus_reminder
-        logger.info(f"Initialized report generator, output dir: {self.output_dir}")
+        self.i18n = I18n(language)
+        logger.info(f"Initialized report generator, output dir: {self.output_dir}, language: {language}")
     
     def generate_weekly_report(self, week_start_date: datetime) -> str:
         """
@@ -71,15 +74,15 @@ class WeeklyReportGenerator:
         md_lines = []
         
         # Header
-        md_lines.append(f"# Weekly Report - Week Starting {week_start.strftime('%B %d, %Y')}")
+        md_lines.append(f"# {self.i18n.t('week_starting', date=week_start.strftime('%B %d, %Y'))}")
         md_lines.append("")
         
         # Overview
-        md_lines.append("## 概览 (Overview)")
+        md_lines.append(f"## {self.i18n.t('overview')}")
         md_lines.append("")
-        md_lines.append(f"- **报告周期**: {week_start.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}")
-        md_lines.append(f"- **生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        md_lines.append(f"- **数据来源**: MineContext AI Assistant")
+        md_lines.append(f"- **{self.i18n.t('report_period')}**: {week_start.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}")
+        md_lines.append(f"- **{self.i18n.t('generated_time')}**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        md_lines.append(f"- **{self.i18n.t('data_source')}**: MineContext AI Assistant")
         md_lines.append("")
         md_lines.append("---")
         md_lines.append("")
