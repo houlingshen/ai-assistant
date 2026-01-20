@@ -57,13 +57,19 @@ def load_env_credentials():
     Load email credentials from environment variables.
     
     Returns:
-        tuple: (email_address, email_password, provider)
+        tuple: (email_address, email_password, provider, save_recipients)
     """
     load_dotenv('config/.env')
     
     email_address = os.getenv('EMAIL_ADDRESS')
     email_password = os.getenv('EMAIL_PASSWORD')
     provider = os.getenv('EMAIL_PROVIDER', 'gmail')
+    save_recipients_str = os.getenv('SAVE_RECIPIENTS', '')
+    
+    # Parse save_recipients (comma-separated list)
+    save_recipients = []
+    if save_recipients_str:
+        save_recipients = [email.strip() for email in save_recipients_str.split(',') if email.strip()]
     
     if not email_address or not email_password:
         raise ValueError(
@@ -71,7 +77,7 @@ def load_env_credentials():
             "with EMAIL_ADDRESS and EMAIL_PASSWORD"
         )
     
-    return email_address, email_password, provider
+    return email_address, email_password, provider, save_recipients
 
 
 def sanitize_filename(filename: str, max_length: int = 200) -> str:

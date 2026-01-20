@@ -24,13 +24,20 @@ class MailClient:
         """
         self.logger = logging.getLogger(__name__)
         self.config = load_config(config_path)
-        self.email_address, self.password, self.provider = load_env_credentials()
+        self.email_address, self.password, self.provider, self.save_recipients = load_env_credentials()
         
         self.connection: Optional[imaplib.IMAP4_SSL] = None
         self.is_connected = False
         
         # Load server settings
         self._load_server_settings()
+        
+        # Log recipient filter status
+        if self.save_recipients:
+            self.logger.info(f"Recipient filter enabled: {len(self.save_recipients)} addresses")
+            self.logger.debug(f"Saving emails from: {', '.join(self.save_recipients)}")
+        else:
+            self.logger.info("Recipient filter disabled: saving all emails")
     
     def _load_server_settings(self):
         """Load IMAP server settings based on provider."""
@@ -209,6 +216,32 @@ class MailClient:
         except Exception as e:
             self.logger.error(f"Error getting folder list: {e}")
             return []
+    
+    def should_save_email(self, sender_email: str) -> bool:
+        """
+        Check if an email from the given sender should be saved.
+        
+        Args:
+            sender_email: Sender's email address
+            
+        Returns:
+            True if email should be saved, False otherwise
+        """
+        # If no recipient filter is set, save all emails
+        if not self.save_recipients:
+            return True
+        
+        # Normalize email for comparison (lowercase)
+        sender_email_lower = sender_email.lower().strip()
+        
+        # Check if sender is in the save list
+        for recipient in self.save_recipients:
+            if sender_email_lower == recipient.lower().strip():
+                self.logger.debug(f"Email from {sender_email} matches saved recipient")
+                return True
+        
+        self.logger.debug(f"Email from {sender_email} not in saved recipients list")
+        return False
     
     def __enter__(self):
         """Context manager entry."""

@@ -140,6 +140,13 @@ class MailAPIProcessor:
                 self.logger.warning(f"Failed to parse email {email_id}")
                 return
             
+            # Check if email should be saved based on recipient filter
+            sender_email = email_data.get('from', {}).get('email', '')
+            if not self.client.should_save_email(sender_email):
+                self.logger.info(f"Email from {sender_email} skipped (not in saved recipients list)")
+                print(f"   ⏩ 跳过: 发件人 {sender_email} 不在保存列表中")
+                return
+            
             # Apply keyword filter if specified
             if hasattr(args, 'subject') and args.subject:
                 if not self.parser.filter_by_keywords(email_data, args.subject):
