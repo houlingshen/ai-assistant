@@ -20,6 +20,18 @@ logger = logging.getLogger(__name__)
 class WeeklyReportScheduler:
     """Schedule weekly report generation and email sending"""
     
+    # Valid day of week values
+    VALID_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    DAY_NAMES = {
+        'mon': 'Monday',
+        'tue': 'Tuesday',
+        'wed': 'Wednesday',
+        'thu': 'Thursday',
+        'fri': 'Friday',
+        'sat': 'Saturday',
+        'sun': 'Sunday'
+    }
+    
     def __init__(self, report_generator, email_sender, config: dict = None):
         """
         Initialize scheduler
@@ -40,11 +52,11 @@ class WeeklyReportScheduler:
         
         self.recipient_email = os.getenv("EMAIL_ADDRESS")
         
-        # Load config
+        # Load and validate config
         if config:
-            self.day_of_week = config.get('day_of_week', 'sun')
-            self.hour = config.get('hour', 20)
-            self.minute = config.get('minute', 0)
+            self.day_of_week = self._validate_day(config.get('day_of_week', 'sun'))
+            self.hour = self._validate_hour(config.get('hour', 20))
+            self.minute = self._validate_minute(config.get('minute', 0))
             self.enabled = config.get('enabled', True)
         else:
             self.day_of_week = 'sun'
@@ -52,7 +64,42 @@ class WeeklyReportScheduler:
             self.minute = 0
             self.enabled = True
         
-        logger.info(f"Scheduler initialized: {self.day_of_week} at {self.hour}:{self.minute:02d}")
+        day_full_name = self.DAY_NAMES.get(self.day_of_week, self.day_of_week.upper())
+        logger.info(f"Scheduler initialized: Every {day_full_name} at {self.hour}:{self.minute:02d}")
+    
+    def _validate_day(self, day: str) -> str:
+        """Validate day of week"""
+        day_lower = day.lower().strip()
+        if day_lower not in self.VALID_DAYS:
+            logger.warning(f"Invalid day '{day}', using default 'sun'. Valid days: {', '.join(self.VALID_DAYS)}")
+            return 'sun'
+        return day_lower
+    
+    def _validate_hour(self, hour: int) -> int:
+        """Validate hour (0-23)"""
+        try:
+            hour_int = int(hour)
+            if 0 <= hour_int <= 23:
+                return hour_int
+            else:
+                logger.warning(f"Hour {hour} out of range (0-23), using default 20")
+                return 20
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid hour '{hour}', using default 20")
+            return 20
+    
+    def _validate_minute(self, minute: int) -> int:
+        """Validate minute (0-59)"""
+        try:
+            minute_int = int(minute)
+            if 0 <= minute_int <= 59:
+                return minute_int
+            else:
+                logger.warning(f"Minute {minute} out of range (0-59), using default 0")
+                return 0
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid minute '{minute}', using default 0")
+            return 0
     
     def generate_and_send_weekly_report(self):
         """Generate and send weekly report for next week"""
@@ -116,18 +163,42 @@ class WeeklyReportScheduler:
             replace_existing=True
         )
         
+        day_full_name = self.DAY_NAMES.get(self.day_of_week, self.day_of_week.upper())
+        time_12hr = self._format_time_12hr(self.hour, self.minute)
+        
         logger.info("="*60)
-        logger.info("Weekly Report Scheduler Started")
+        logger.info("📅 Weekly Report Scheduler Started")
         logger.info("="*60)
-        logger.info(f"Next run: Every {self.day_of_week.upper()} at {self.hour}:{self.minute:02d}")
+        logger.info(f"Schedule: Every {day_full_name} at {self.hour}:{self.minute:02d} ({time_12hr})")
+        logger.info(f"Recipient: {self.recipient_email or 'Not configured'}")
         logger.info("Press Ctrl+C to stop")
         logger.info("="*60)
+        
+        print("\n" + "="*60)
+        print("📅 Weekly Report Scheduler")
+        print("="*60)
+        print(f"⏰ Schedule: Every {day_full_name} at {self.hour}:{self.minute:02d} ({time_12hr})")
+        print(f"📧 Recipient: {self.recipient_email or 'Not configured'}")
+        print(f"\n💡 To change schedule, edit: Reply/config/config.yaml")
+        print(f"   - day_of_week: {', '.join(self.VALID_DAYS)}")
+        print(f"   - hour: 0-23 (24-hour format)")
+        print(f"   - minute: 0-59")
+        print("\n⌨️  Press Ctrl+C to stop")
+        print("="*60 + "\n")
         
         try:
             self.scheduler.start()
         except (KeyboardInterrupt, SystemExit):
             logger.info("\nScheduler stopped by user")
+            print("\n✋ Scheduler stopped by user")
             self.scheduler.shutdown()
+    
+    def _format_time_12hr(self, hour: int, minute: int) -> str:
+        """Format time in 12-hour format"""
+        period = "AM" if hour < 12 else "PM"
+        hour_12 = hour if hour <= 12 else hour - 12
+        hour_12 = 12 if hour_12 == 0 else hour_12
+        return f"{hour_12}:{minute:02d} {period}"
     
     def run_once(self):
         """Run the job once immediately (for testing)"""

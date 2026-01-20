@@ -49,6 +49,12 @@ Examples:
   
   # Use custom MineContext API
   python3 main.py --api-url http://localhost:8080 --auth-token your_token
+  
+  # Override schedule settings
+  python3 main.py --mode daemon --day fri --hour 18 --minute 30
+  
+  # Check current schedule
+  python3 main.py --show-schedule
         """
     )
     
@@ -95,6 +101,31 @@ Examples:
         help='MineContext API authentication token'
     )
     
+    # Schedule override options
+    parser.add_argument(
+        '--day',
+        choices=['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+        help='Override day of week for scheduled reports'
+    )
+    
+    parser.add_argument(
+        '--hour',
+        type=int,
+        help='Override hour (0-23) for scheduled reports'
+    )
+    
+    parser.add_argument(
+        '--minute',
+        type=int,
+        help='Override minute (0-59) for scheduled reports'
+    )
+    
+    parser.add_argument(
+        '--show-schedule',
+        action='store_true',
+        help='Show current schedule configuration and exit'
+    )
+    
     return parser.parse_args()
 
 
@@ -104,6 +135,37 @@ def main():
     
     # Load configuration
     config = load_config(args.config)
+    
+    # Show schedule mode
+    if args.show_schedule:
+        scheduler_config = config.get('scheduler', {}).get('weekly_report', {})
+        day = args.day or scheduler_config.get('day_of_week', 'sun')
+        hour = args.hour if args.hour is not None else scheduler_config.get('hour', 20)
+        minute = args.minute if args.minute is not None else scheduler_config.get('minute', 0)
+        enabled = config.get('scheduler', {}).get('enabled', True)
+        
+        day_names = {
+            'mon': 'Monday', 'tue': 'Tuesday', 'wed': 'Wednesday',
+            'thu': 'Thursday', 'fri': 'Friday', 'sat': 'Saturday', 'sun': 'Sunday'
+        }
+        day_full = day_names.get(day, day.upper())
+        period = "AM" if hour < 12 else "PM"
+        hour_12 = hour if hour <= 12 else hour - 12
+        hour_12 = 12 if hour_12 == 0 else hour_12
+        
+        print("\n" + "="*60)
+        print("📅 Weekly Report Schedule Configuration")
+        print("="*60)
+        print(f"\n📌 Config File: {args.config}")
+        print(f"⏰ Schedule: Every {day_full} at {hour}:{minute:02d} ({hour_12}:{minute:02d} {period})")
+        print(f"✅ Enabled: {'Yes' if enabled else 'No'}")
+        print(f"\n💡 Valid days: {', '.join(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])}")
+        print("💡 Valid hours: 0-23 (24-hour format)")
+        print("💡 Valid minutes: 0-59")
+        print(f"\n⚙️  To change: Edit {args.config} or use command-line options")
+        print("   Example: python3 main.py --day fri --hour 18 --minute 30")
+        print("="*60 + "\n")
+        return
     
     # Setup logging
     log_config = config.get('logging', {})
@@ -213,6 +275,18 @@ def main():
             print("Press Ctrl+C to stop.\n")
             
             scheduler_config = config.get('scheduler', {}).get('weekly_report', {})
+            
+            # Override with command-line arguments if provided
+            if args.day:
+                scheduler_config['day_of_week'] = args.day
+                logger.info(f"Override: day_of_week = {args.day}")
+            if args.hour is not None:
+                scheduler_config['hour'] = args.hour
+                logger.info(f"Override: hour = {args.hour}")
+            if args.minute is not None:
+                scheduler_config['minute'] = args.minute
+                logger.info(f"Override: minute = {args.minute}")
+            
             scheduler = WeeklyReportScheduler(
                 report_generator,
                 email_sender,

@@ -32,9 +32,25 @@ email:
 
 scheduler:
   weekly_report:
+    # Day of week to send report (mon, tue, wed, thu, fri, sat, sun)
+    # Examples:
+    #   - "sun" = Sunday
+    #   - "mon" = Monday
+    #   - "fri" = Friday
     day_of_week: "sun"  # Sunday
+    
+    # Hour (0-23, 24-hour format)
+    # Examples:
+    #   - 20 = 8:00 PM
+    #   - 9 = 9:00 AM
+    #   - 18 = 6:00 PM
     hour: 20
+    
+    # Minute (0-59)
     minute: 0
+  
+  # Enable/disable automatic scheduling
+  # Set to false to disable automatic reports
   enabled: true
 
 logging:
