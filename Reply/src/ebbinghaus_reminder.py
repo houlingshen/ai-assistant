@@ -345,17 +345,6 @@ class EbbinghausReviewReminder:
             
             lines.append("")
         
-        # Review intervals explanation
-        lines.append("## 📖 艾宾浩斯复习间隔说明")
-        lines.append("")
-        lines.append("科学研究表明，以下时间间隔复习效果最佳：")
-        lines.append("")
-        for i, interval in enumerate(self.REVIEW_INTERVALS, 1):
-            lines.append(f"{i}. 第{i}次复习：学习后 {interval} 天")
-        lines.append("")
-        lines.append("*坚持复习，知识永不遗忘！* 💪")
-        lines.append("")
-        
         return "\n".join(lines)
     
     def scan_minecontext_for_learning_content(self, days_back: int = 7) -> int:
