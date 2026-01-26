@@ -8,6 +8,7 @@ Collect data from MineContext Web API
 
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import requests
@@ -255,6 +256,104 @@ class MineContextDataCollector:
             logger.error(f"Error retrieving activities: {e}")
             return []
     
+    def get_email_documents(self, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
+        """
+        Get email documents from MailAPI SavedDocuments folder
+        
+        Args:
+            start_date: Start date
+            end_date: End date
+            
+        Returns:
+            List of email document dictionaries with course schedules
+        """
+        try:
+            # Path to MailAPI SavedDocuments
+            mailapi_docs = Path(__file__).parent.parent.parent / "MailAPI/SavedDocuments"
+            
+            if not mailapi_docs.exists():
+                logger.warning(f"MailAPI SavedDocuments folder not found: {mailapi_docs}")
+                return []
+            
+            email_docs = []
+            
+            # Keywords to identify course-related emails
+            course_keywords = [
+                'course', 'class', 'schedule', 'timetable', 'syllabus',
+                'teaching plan', 'curriculum', 'lesson plan',
+                '课程', '课表', '教学计划', '课程大纲', '教案'
+            ]
+            
+            # Read all .md files in SavedDocuments
+            for md_file in mailapi_docs.glob("*.md"):
+                if md_file.name.startswith('summary_'):
+                    continue  # Skip summary files
+                
+                try:
+                    with open(md_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Extract date from filename (format: YYYYMMDD_HHMMSS_sender_subject.md)
+                    match = re.match(r'(\d{8})_(\d{6})_', md_file.name)
+                    if match:
+                        date_str = match.group(1)
+                        time_str = match.group(2)
+                        doc_date = datetime.strptime(f"{date_str}{time_str}", "%Y%m%d%H%M%S")
+                        
+                        # Filter by date range
+                        if not (start_date <= doc_date <= end_date):
+                            continue
+                    
+                    # Check if it's course-related
+                    content_lower = content.lower()
+                    is_course_related = any(keyword.lower() in content_lower for keyword in course_keywords)
+                    
+                    if is_course_related:
+                        # Extract sender and body
+                        sender_match = re.search(r'^-\s*\*\*发件人\*\*:\s*(.+)$', content, re.MULTILINE)
+                        body_match = re.search(r'## 正文内容\s*\n+(.+?)(?=##|---|$)', content, re.DOTALL)
+                        attachments_match = re.search(r'## 附件列表(.+?)(?=---|$)', content, re.DOTALL)
+                        
+                        sender = sender_match.group(1).strip() if sender_match else 'Unknown'
+                        body = body_match.group(1).strip() if body_match else ''
+                        
+                        # Use body content as subject/title
+                        if body:
+                            subject = body[:60] + '...' if len(body) > 60 else body
+                        else:
+                            subject = 'Course Schedule'
+                        
+                        # Extract attachment information
+                        attachments = []
+                        if attachments_match:
+                            att_text = attachments_match.group(1)
+                            # Find PDF, DOC, XLS attachments
+                            att_files = re.findall(r'\[([^\]]+\.(pdf|docx?|xlsx?|pptx?))\]', att_text, re.IGNORECASE)
+                            attachments = [att[0] for att in att_files]
+                        
+                        email_docs.append({
+                            'file_path': str(md_file),
+                            'subject': subject,
+                            'sender': sender,
+                            'body': body,
+                            'attachments': attachments,
+                            'date': doc_date.isoformat(),
+                            'type': 'course_schedule'
+                        })
+                        
+                        logger.info(f"Found course-related email: {subject}")
+                
+                except Exception as e:
+                    logger.warning(f"Error reading email document {md_file}: {e}")
+                    continue
+            
+            logger.info(f"Retrieved {len(email_docs)} course-related email documents")
+            return email_docs
+            
+        except Exception as e:
+            logger.error(f"Error retrieving email documents: {e}")
+            return []
+    
     def get_week_data(self, week_start_date: datetime) -> Dict[str, Any]:
         """
         Get all data for a specific week
@@ -275,6 +374,7 @@ class MineContextDataCollector:
             'tips': self.get_tips(week_start_date, week_end_date),
             'todos': self.get_todos(week_start_date, week_end_date),
             'activities': self.get_activities(week_start_date, week_end_date),
+            'email_documents': self.get_email_documents(week_start_date, week_end_date),
             'week_start': week_start_date,
             'week_end': week_end_date
         }

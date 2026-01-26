@@ -61,6 +61,14 @@ class I18n:
             'no_pending_tasks': '*暂无待完成任务*',
             'important_deadlines': '⚠️ 重要截止日期提醒',
             
+            # Course schedules
+            'course_schedules': '📚 课程计划 (Course Schedules)',
+            'sender': '发件人',
+            'date': '日期',
+            'content': '内容',
+            'attachments': '附件',
+            'course_tip': '请按照课程计划安排学习时间，确保按时完成教学任务。',
+            
             # Ebbinghaus
             'ebbinghaus_title': '📚 艾宾浩斯复习提醒 (Ebbinghaus Review Reminder)',
             'ebbinghaus_intro': '根据艾宾浩斯遗忘曲线，以下是您的复习计划：',
@@ -140,6 +148,14 @@ class I18n:
             'pending_tasks': 'Pending Tasks',
             'no_pending_tasks': '*No pending tasks*',
             'important_deadlines': '⚠️ Important Deadlines',
+            
+            # Course schedules
+            'course_schedules': '📚 Course Schedules',
+            'sender': 'Sender',
+            'date': 'Date',
+            'content': 'Content',
+            'attachments': 'Attachments',
+            'course_tip': 'Please arrange your study time according to the course schedule to ensure timely completion of teaching tasks.',
             
             # Ebbinghaus
             'ebbinghaus_title': '📚 Ebbinghaus Review Reminder',

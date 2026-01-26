@@ -200,6 +200,49 @@ class WeeklyReportGenerator:
             md_lines.append("---")
             md_lines.append("")
         
+        # Email Documents (Course Schedules)
+        email_docs = week_data.get('email_documents', [])
+        if email_docs:
+            md_lines.append(f"## {self.i18n.t('course_schedules') if hasattr(self.i18n, 't') else '📚 课程计划 (Course Schedules)'}")
+            md_lines.append("")
+            
+            for doc in email_docs:
+                subject = doc.get('subject', 'No subject')
+                sender = doc.get('sender', 'Unknown')
+                body = doc.get('body', '')
+                attachments = doc.get('attachments', [])
+                doc_date = doc.get('date', '')
+                
+                # Format date
+                if doc_date:
+                    try:
+                        date_obj = datetime.fromisoformat(doc_date)
+                        formatted_date = date_obj.strftime('%Y-%m-%d %H:%M')
+                    except:
+                        formatted_date = doc_date
+                else:
+                    formatted_date = 'Unknown date'
+                
+                md_lines.append(f"### 📧 {subject}")
+                md_lines.append("")
+                md_lines.append(f"- **发件人 (Sender)**: {sender}")
+                md_lines.append(f"- **日期 (Date)**: {formatted_date}")
+                
+                if body:
+                    md_lines.append(f"- **内容 (Content)**: {body[:200]}{'...' if len(body) > 200 else ''}")
+                
+                if attachments:
+                    md_lines.append(f"- **📎 附件 (Attachments)**:")
+                    for att in attachments:
+                        md_lines.append(f"  - {att}")
+                
+                md_lines.append("")
+            
+            md_lines.append("💡 **提示 (Tip)**: 请按照课程计划安排学习时间，确保按时完成教学任务。")
+            md_lines.append("")
+            md_lines.append("---")
+            md_lines.append("")
+        
         # Next Week Plan
         md_lines.append("## 下周计划 (Next Week Plan)")
         md_lines.append("")
