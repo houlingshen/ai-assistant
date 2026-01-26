@@ -291,100 +291,154 @@ class EbbinghausReviewReminder:
     
     def generate_review_reminder_text(self) -> str:
         """
-        Generate formatted review reminder text for email
+        Generate actionable review reminder text focused on helping users study effectively
         
         Returns:
-            Formatted text with review reminders
+            Formatted text with clear action items for review
         """
         due_reviews = self.get_due_reviews()
         upcoming_reviews = self.get_upcoming_reviews(7)
-        stats = self.get_statistics()
         
         lines = []
-        lines.append("# 📚 艾宾浩斯复习提醒 (Ebbinghaus Review Reminder)")
+        lines.append("# 📚 今日复习计划 (Today's Review Plan)")
         lines.append("")
-        lines.append("根据艾宾浩斯遗忘曲线，以下是您的复习计划：")
-        lines.append("")
-        
-        # Statistics
-        lines.append("## 📊 复习统计")
-        lines.append("")
-        lines.append(f"- **活跃学习内容**: {stats['active_schedules']} 项")
-        lines.append(f"- **已完成复习**: {stats['completed_schedules']} 项")
-        lines.append(f"- **完成率**: {stats['completion_rate']}%")
-        lines.append(f"- **今日待复习**: {stats['due_today']} 项")
-        lines.append(f"- **本周即将到期**: {stats['upcoming_this_week']} 项")
+        lines.append("*基于艾宾浩斯遗忘曲线的科学复习提醒*")
         lines.append("")
         
-        # Due reviews - Group by course
+        # Priority: Due reviews (what needs to be reviewed NOW)
         if due_reviews:
-            lines.append("⚠️ 待复习内容 (需要立即复习)")
-            lines.append("")
-                    
-            # Group reviews by course
+            # Group by course
             reviews_by_course = {}
             for review in due_reviews:
-                course_name = review.get('course_name', '未分类')
+                course_name = review.get('course_name', '其他内容')
                 if course_name not in reviews_by_course:
                     reviews_by_course[course_name] = []
                 reviews_by_course[course_name].append(review)
-                    
-            # Display reviews grouped by course
+            
+            lines.append("## 🎯 今日必做 - 需要立即复习的内容")
+            lines.append("")
+            
             for course_name, course_reviews in sorted(reviews_by_course.items()):
-                lines.append(f"### 📚 课程: {course_name}")
+                # Count overdue days
+                max_overdue = max(r['days_overdue'] for r in course_reviews)
+                urgency_icon = "🔴" if max_overdue > 3 else "🟡" if max_overdue > 0 else "🟢"
+                
+                lines.append(f"### {urgency_icon} {course_name}")
                 lines.append("")
-                        
-                for review in course_reviews:
-                    content_type_icon = "📖" if review.get('content_type') == 'lesson' else "📝" if review.get('content_type') == 'assignment' else "📚"
-                    lines.append(f"#### {content_type_icon} {review['title']}")
-                    lines.append("")
-                    lines.append(f"- **复习次数**: 第 {review['review_number']}/{review['total_reviews']} 次")
-                    lines.append(f"- **应复习日期**: {review['due_date'][:10]}")
-                            
-                    if review['days_overdue'] > 0:
-                        lines.append(f"- **已逾期**: {review['days_overdue']} 天 ⚠️")
+                lines.append(f"**共 {len(course_reviews)} 个知识点需要复习**")
+                lines.append("")
+                
+                # List what to review
+                lines.append("**复习内容：**")
+                for i, review in enumerate(course_reviews, 1):
+                    # Simplify: just show what needs to be reviewed
+                    title = review['title']
+                    review_num = review['review_number']
+                    
+                    # Show status icon
+                    if review['days_overdue'] > 3:
+                        status = "⚠️ 紧急"
+                    elif review['days_overdue'] > 0:
+                        status = "⏰ 逾期"
                     else:
-                        lines.append(f"- **状态**: 今日到期")
-                            
-                    if review['summary']:
-                        lines.append(f"- **内容摘要**: {review['summary'][:100]}...")
-                            
+                        status = "📅 今天"
+                    
+                    lines.append(f"{i}. {title} - {status} (第{review_num}次复习)")
+                
+                lines.append("")
+                
+                # Show what materials to review
+                if course_reviews[0].get('summary'):
+                    lines.append("**复习要点：**")
+                    summary = course_reviews[0]['summary']
+                    lines.append(f"- {summary[:200]}{'...' if len(summary) > 200 else ''}")
                     lines.append("")
-                        
+                
+                # Action guidance
+                if max_overdue > 3:
+                    lines.append("💡 **建议**: 这门课程复习严重滞后，建议今天优先完成！")
+                elif max_overdue > 0:
+                    lines.append("💡 **建议**: 尽快完成复习，巩固记忆。")
+                else:
+                    lines.append("💡 **建议**: 按计划复习，保持学习节奏。")
+                
+                lines.append("")
+                lines.append("---")
                 lines.append("")
         else:
-            lines.append("## ✅ 无待复习内容")
+            lines.append("## ✅ 今日无待复习内容")
             lines.append("")
-            lines.append("太棒了！您目前没有逾期的复习任务。")
+            lines.append("🎉 太棒了！今天没有需要复习的内容，继续保持！")
             lines.append("")
         
-        # Upcoming reviews - Group by course
+        # Upcoming reviews this week
         if upcoming_reviews:
-            lines.append("📅 本周复习计划")
+            lines.append("## 📅 本周复习计划")
             lines.append("")
-                    
-            # Group by course
-            upcoming_by_course = {}
+            lines.append("*提前规划，从容应对*")
+            lines.append("")
+            
+            # Group by date then by course
+            reviews_by_date = {}
             for review in upcoming_reviews:
-                course_name = review.get('course_name', '未分类')
-                if course_name not in upcoming_by_course:
-                    upcoming_by_course[course_name] = []
-                upcoming_by_course[course_name].append(review)
-                    
-            # Display by course
-            for course_name, course_reviews in sorted(upcoming_by_course.items()):
-                lines.append(f"### 📚 {course_name}")
+                date = review['review_date'][:10]
+                if date not in reviews_by_date:
+                    reviews_by_date[date] = {}
+                
+                course_name = review.get('course_name', '其他内容')
+                if course_name not in reviews_by_date[date]:
+                    reviews_by_date[date][course_name] = []
+                reviews_by_date[date][course_name].append(review)
+            
+            # Display by date
+            for date in sorted(reviews_by_date.keys()):
+                # Parse date to show day of week
+                from datetime import datetime
+                date_obj = datetime.fromisoformat(date)
+                weekday_names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+                weekday = weekday_names[date_obj.weekday()]
+                
+                # Calculate days until
+                today = datetime.now().date()
+                days_until = (date_obj.date() - today).days
+                
+                if days_until == 0:
+                    date_display = f"今天 ({date})"  
+                elif days_until == 1:
+                    date_display = f"明天 {weekday} ({date})"
+                else:
+                    date_display = f"{days_until}天后 {weekday} ({date})"
+                
+                lines.append(f"### 📆 {date_display}")
                 lines.append("")
-                        
-                for review in course_reviews:
-                    days_text = "今天" if review['days_until'] == 0 else f"{review['days_until']} 天后"
-                    content_type_icon = "📖" if review.get('content_type') == 'lesson' else "📝" if review.get('content_type') == 'assignment' else "📚"
-                    lines.append(f"- {content_type_icon} **{review['title']}** - {days_text} ({review['review_date'][:10]})")
-                    lines.append(f"  - 第 {review['review_number']}/{review['total_reviews']} 次复习")
-                        
+                
+                # List courses for this date
+                for course_name, course_reviews in sorted(reviews_by_date[date].items()):
+                    lines.append(f"**{course_name}** - {len(course_reviews)} 个知识点")
+                    for review in course_reviews:
+                        lines.append(f"  - {review['title']} (第{review['review_number']}次)")
+                
                 lines.append("")
-                    
-            lines.append("")
+        
+        # Study tips based on Ebbinghaus curve
+        lines.append("---")
+        lines.append("")
+        lines.append("## 💡 复习小贴士")
+        lines.append("")
+        lines.append("**艾宾浩斯遗忘曲线复习时间点：**")
+        lines.append("- 第1次复习：学习后1天 (巩固初次记忆)")
+        lines.append("- 第2次复习：学习后2天 (强化记忆)")
+        lines.append("- 第3次复习：学习后4天 (加深印象)")
+        lines.append("- 第4次复习：学习后7天 (长期记忆)")
+        lines.append("- 第5次复习：学习后15天 (考试准备)")
+        lines.append("- 第6次复习：学习后30天 (永久记忆)")
+        lines.append("")
+        lines.append("**复习建议：**")
+        lines.append("- ✅ 按时复习比一次性突击更有效")
+        lines.append("- ✅ 每次复习15-30分钟即可，不需要重新完整学习")
+        lines.append("- ✅ 重点回顾关键概念、公式和例题")
+        lines.append("- ✅ 做相关练习题检验掌握程度")
+        lines.append("")
         
         return "\n".join(lines)
     
