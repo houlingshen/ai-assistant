@@ -347,13 +347,6 @@ class EbbinghausReviewReminder:
                 
                 lines.append("")
                 
-                # Show what materials to review
-                if course_reviews[0].get('summary'):
-                    lines.append("**复习要点：**")
-                    summary = course_reviews[0]['summary']
-                    lines.append(f"- {summary[:200]}{'...' if len(summary) > 200 else ''}")
-                    lines.append("")
-                
                 # Action guidance
                 if max_overdue > 3:
                     lines.append("💡 **建议**: 这门课程复习严重滞后，建议今天优先完成！")
@@ -492,74 +485,121 @@ class EbbinghausReviewReminder:
     
     def scan_email_documents_for_courses(self, email_documents: List[Dict[str, Any]]) -> int:
         """
-        Scan email documents (course schedules) and add to review schedule
-        
+        Scan email documents for course schedules/plans and add to review schedule
+        Only processes emails that contain actual schedule/plan indicators
+            
         Args:
             email_documents: List of email documents from data_collector
-            
+                
         Returns:
             Number of items added to review schedule
         """
         import re
-        
+            
         added_count = 0
-        
+            
+        # Keywords that indicate this is a course schedule/plan email
+        schedule_indicators = [
+            r'schedule',
+            r'timetable',
+            r'time table',
+            r'syllabus',
+            r'teaching plan',
+            r'lesson plan',
+            r'curriculum',
+            r'course plan',
+            r'outline',
+            r'课程表',
+            r'课表',
+            r'教学计划',
+            r'课程大纲',
+            r'课程安排',
+            r'教案',
+            r'学习计划',
+            r'week\s*\d+',  # Week 1, Week 2, etc.
+            r'第\s*\d+\s*周',  # 第1周, 第2周, etc.
+        ]
+            
         for doc in email_documents:
             body = doc.get('body', '')
+            subject = doc.get('subject', '')
             attachments = doc.get('attachments', [])
             doc_date_str = doc.get('date', '')
-            
+                
             if not doc_date_str:
                 continue
-            
+                
             try:
                 doc_date = datetime.fromisoformat(doc_date_str)
             except:
                 continue
-            
+                
+            # First check: Does this email contain schedule/plan indicators?
+            is_schedule_email = False
+            combined_text = f"{subject} {body} {' '.join(attachments)}".lower()
+                
+            for indicator in schedule_indicators:
+                if re.search(indicator, combined_text, re.IGNORECASE):
+                    is_schedule_email = True
+                    logger.info(f"Found schedule indicator '{indicator}' in email")
+                    break
+                
+            # Skip if not a schedule/plan email
+            if not is_schedule_email:
+                logger.debug(f"Skipping email - no schedule indicators found")
+                continue
+                
             # Extract course names from body and attachments
             courses = set()
-            
+                
             # Common course keywords
             course_patterns = [
-                r'(Mathematics|Math|\u6570\u5b66)',
-                r'(English|\u82f1\u8bed)',
-                r'(Science|\u79d1\u5b66)',
-                r'(History|\u5386\u53f2)',
-                r'(Geography|\u5730\u7406)',
-                r'(Physics|\u7269\u7406)',
-                r'(Chemistry|\u5316\u5b66)',
-                r'(Biology|\u751f\u7269)',
-                r'(Chinese|\u8bed\u6587)',
+                r'(Mathematics|Math|数学)',
+                r'(English|英语)',
+                r'(Science|科学)',
+                r'(History|历史)',
+                r'(Geography|地理)',
+                r'(Physics|物理)',
+                r'(Chemistry|化学)',
+                r'(Biology|生物)',
+                r'(Chinese|语文)',
             ]
-            
+                
             # Search in body
             for pattern in course_patterns:
                 matches = re.findall(pattern, body, re.IGNORECASE)
                 courses.update(matches)
-            
+                
             # Search in attachment names
             for att in attachments:
                 for pattern in course_patterns:
                     matches = re.findall(pattern, att, re.IGNORECASE)
                     courses.update(matches)
-            
-            # If no courses identified, use a default
+                
+            # If no specific courses identified but it's a schedule email, use subject/attachment as course
             if not courses:
-                courses = {'通用课程'}
-            
+                # Try to extract from subject or first attachment
+                if attachments:
+                    # Use attachment filename as course name
+                    att_name = attachments[0].replace('.pdf', '').replace('.docx', '').replace('.xlsx', '')
+                    courses.add(att_name[:50])  # Limit length
+                elif subject:
+                    courses.add(subject[:50])
+                else:
+                    courses = {'课程计划'}
+                
             # Create review items for each course mentioned
             for course_name in courses:
                 content_id = f"course_{course_name}_{doc_date.strftime('%Y%m%d')}"
-                
+                    
                 # Skip if already exists
                 if content_id in self.review_schedules:
                     continue
-                
+                    
                 # Extract week number or lesson info from body
-                week_match = re.search(r'week\s+(\d+)|\u7b2c(\d+)\u5468', body, re.IGNORECASE)
-                lesson_match = re.search(r'lesson\s+(\d+)|\u7b2c(\d+)\u8bfe', body, re.IGNORECASE)
-                
+                week_match = re.search(r'week\s+(\d+)|第(\d+)周', body, re.IGNORECASE)
+                lesson_match = re.search(r'lesson\s+(\d+)|第(\d+)课', body, re.IGNORECASE)
+                    
                 if week_match:
                     week_num = week_match.group(1) or week_match.group(2)
                     content_title = f"{course_name} - Week {week_num}"
@@ -569,20 +609,23 @@ class EbbinghausReviewReminder:
                     content_title = f"{course_name} - Lesson {lesson_num}"
                     content_type = 'lesson'
                 else:
-                    content_title = f"{course_name} - Course Material"
+                    content_title = f"{course_name} - 课程计划"
                     content_type = 'reading'
-                
+                    
+                # Use a concise summary - just indicate it's a schedule
+                summary = f"收到课程计划，请按时复习课程内容"
+                    
                 # Add to review schedule
                 self.add_learning_content(
                     content_id=content_id,
                     content_title=content_title,
-                    content_summary=body[:150] if body else 'Course schedule received',
+                    content_summary=summary,
                     learning_date=doc_date,
                     course_name=course_name,
                     content_type=content_type
                 )
-                
+                    
                 added_count += 1
                 logger.info(f"Added course review: {content_title}")
-        
+            
         return added_count
