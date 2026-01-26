@@ -283,8 +283,13 @@ class WeeklyReportGenerator:
         # Ebbinghaus Review Reminder (if enabled)
         if self.ebbinghaus_reminder:
             try:
-                # Scan for new learning content
+                # Scan for new learning content from MineContext
                 self.ebbinghaus_reminder.scan_minecontext_for_learning_content(days_back=7)
+                
+                # Scan for course schedules from email documents
+                if email_docs:
+                    courses_added = self.ebbinghaus_reminder.scan_email_documents_for_courses(email_docs)
+                    logger.info(f"Added {courses_added} course review items from emails")
                 
                 # Generate review reminder section
                 review_text = self.ebbinghaus_reminder.generate_review_reminder_text()

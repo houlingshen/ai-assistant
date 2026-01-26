@@ -69,7 +69,8 @@ class EbbinghausReviewReminder:
             logger.error(f"Error saving review schedules: {e}")
     
     def add_learning_content(self, content_id: str, content_title: str, 
-                            content_summary: str, learning_date: Optional[datetime] = None):
+                            content_summary: str, learning_date: Optional[datetime] = None,
+                            course_name: Optional[str] = None, content_type: Optional[str] = None):
         """
         Add new learning content to review schedule
         
@@ -78,6 +79,8 @@ class EbbinghausReviewReminder:
             content_title: Title of the learning content
             content_summary: Summary of the content
             learning_date: When the content was learned (default: now)
+            course_name: Name of the course (e.g., "Mathematics", "English")
+            content_type: Type of content (e.g., "lesson", "assignment", "reading")
         """
         if learning_date is None:
             learning_date = datetime.now()
@@ -98,7 +101,9 @@ class EbbinghausReviewReminder:
             'review_dates': review_dates,
             'completed_reviews': [],
             'current_review_index': 0,
-            'status': 'active'
+            'status': 'active',
+            'course_name': course_name or '未分类',  # Default: "Uncategorized"
+            'content_type': content_type or 'general'
         }
         
         self._save_schedules()
@@ -143,7 +148,9 @@ class EbbinghausReviewReminder:
                     'due_date': schedule['review_dates'][current_index],
                     'review_number': current_index + 1,
                     'total_reviews': len(self.REVIEW_INTERVALS),
-                    'days_overdue': (reference_date.date() - next_review_date.date()).days
+                    'days_overdue': (reference_date.date() - next_review_date.date()).days,
+                    'course_name': schedule.get('course_name', '未分类'),
+                    'content_type': schedule.get('content_type', 'general')
                 })
         
         # Save any status changes
@@ -232,7 +239,9 @@ class EbbinghausReviewReminder:
                     'review_date': schedule['review_dates'][current_index],
                     'review_number': current_index + 1,
                     'total_reviews': len(self.REVIEW_INTERVALS),
-                    'days_until': days_until
+                    'days_until': days_until,
+                    'course_name': schedule.get('course_name', '未分类'),
+                    'content_type': schedule.get('content_type', 'general')
                 })
         
         # Sort by soonest first
@@ -307,25 +316,41 @@ class EbbinghausReviewReminder:
         lines.append(f"- **本周即将到期**: {stats['upcoming_this_week']} 项")
         lines.append("")
         
-        # Due reviews
+        # Due reviews - Group by course
         if due_reviews:
-            lines.append("## ⚠️ 待复习内容 (需要立即复习)")
+            lines.append("⚠️ 待复习内容 (需要立即复习)")
             lines.append("")
-            
+                    
+            # Group reviews by course
+            reviews_by_course = {}
             for review in due_reviews:
-                lines.append(f"### {review['title']}")
+                course_name = review.get('course_name', '未分类')
+                if course_name not in reviews_by_course:
+                    reviews_by_course[course_name] = []
+                reviews_by_course[course_name].append(review)
+                    
+            # Display reviews grouped by course
+            for course_name, course_reviews in sorted(reviews_by_course.items()):
+                lines.append(f"### 📚 课程: {course_name}")
                 lines.append("")
-                lines.append(f"- **复习次数**: 第 {review['review_number']}/{review['total_reviews']} 次")
-                lines.append(f"- **应复习日期**: {review['due_date'][:10]}")
-                
-                if review['days_overdue'] > 0:
-                    lines.append(f"- **已逾期**: {review['days_overdue']} 天 ⚠️")
-                else:
-                    lines.append(f"- **状态**: 今日到期")
-                
-                if review['summary']:
-                    lines.append(f"- **内容摘要**: {review['summary'][:100]}...")
-                
+                        
+                for review in course_reviews:
+                    content_type_icon = "📖" if review.get('content_type') == 'lesson' else "📝" if review.get('content_type') == 'assignment' else "📚"
+                    lines.append(f"#### {content_type_icon} {review['title']}")
+                    lines.append("")
+                    lines.append(f"- **复习次数**: 第 {review['review_number']}/{review['total_reviews']} 次")
+                    lines.append(f"- **应复习日期**: {review['due_date'][:10]}")
+                            
+                    if review['days_overdue'] > 0:
+                        lines.append(f"- **已逾期**: {review['days_overdue']} 天 ⚠️")
+                    else:
+                        lines.append(f"- **状态**: 今日到期")
+                            
+                    if review['summary']:
+                        lines.append(f"- **内容摘要**: {review['summary'][:100]}...")
+                            
+                    lines.append("")
+                        
                 lines.append("")
         else:
             lines.append("## ✅ 无待复习内容")
@@ -333,16 +358,32 @@ class EbbinghausReviewReminder:
             lines.append("太棒了！您目前没有逾期的复习任务。")
             lines.append("")
         
-        # Upcoming reviews
+        # Upcoming reviews - Group by course
         if upcoming_reviews:
-            lines.append("## 📅 本周复习计划")
+            lines.append("📅 本周复习计划")
             lines.append("")
-            
+                    
+            # Group by course
+            upcoming_by_course = {}
             for review in upcoming_reviews:
-                days_text = "今天" if review['days_until'] == 0 else f"{review['days_until']} 天后"
-                lines.append(f"- **{review['title']}** - {days_text} ({review['review_date'][:10]})")
-                lines.append(f"  - 第 {review['review_number']}/{review['total_reviews']} 次复习")
-            
+                course_name = review.get('course_name', '未分类')
+                if course_name not in upcoming_by_course:
+                    upcoming_by_course[course_name] = []
+                upcoming_by_course[course_name].append(review)
+                    
+            # Display by course
+            for course_name, course_reviews in sorted(upcoming_by_course.items()):
+                lines.append(f"### 📚 {course_name}")
+                lines.append("")
+                        
+                for review in course_reviews:
+                    days_text = "今天" if review['days_until'] == 0 else f"{review['days_until']} 天后"
+                    content_type_icon = "📖" if review.get('content_type') == 'lesson' else "📝" if review.get('content_type') == 'assignment' else "📚"
+                    lines.append(f"- {content_type_icon} **{review['title']}** - {days_text} ({review['review_date'][:10]})")
+                    lines.append(f"  - 第 {review['review_number']}/{review['total_reviews']} 次复习")
+                        
+                lines.append("")
+                    
             lines.append("")
         
         return "\n".join(lines)
@@ -394,3 +435,100 @@ class EbbinghausReviewReminder:
         except Exception as e:
             logger.error(f"Error scanning MineContext: {e}")
             return 0
+    
+    def scan_email_documents_for_courses(self, email_documents: List[Dict[str, Any]]) -> int:
+        """
+        Scan email documents (course schedules) and add to review schedule
+        
+        Args:
+            email_documents: List of email documents from data_collector
+            
+        Returns:
+            Number of items added to review schedule
+        """
+        import re
+        
+        added_count = 0
+        
+        for doc in email_documents:
+            body = doc.get('body', '')
+            attachments = doc.get('attachments', [])
+            doc_date_str = doc.get('date', '')
+            
+            if not doc_date_str:
+                continue
+            
+            try:
+                doc_date = datetime.fromisoformat(doc_date_str)
+            except:
+                continue
+            
+            # Extract course names from body and attachments
+            courses = set()
+            
+            # Common course keywords
+            course_patterns = [
+                r'(Mathematics|Math|\u6570\u5b66)',
+                r'(English|\u82f1\u8bed)',
+                r'(Science|\u79d1\u5b66)',
+                r'(History|\u5386\u53f2)',
+                r'(Geography|\u5730\u7406)',
+                r'(Physics|\u7269\u7406)',
+                r'(Chemistry|\u5316\u5b66)',
+                r'(Biology|\u751f\u7269)',
+                r'(Chinese|\u8bed\u6587)',
+            ]
+            
+            # Search in body
+            for pattern in course_patterns:
+                matches = re.findall(pattern, body, re.IGNORECASE)
+                courses.update(matches)
+            
+            # Search in attachment names
+            for att in attachments:
+                for pattern in course_patterns:
+                    matches = re.findall(pattern, att, re.IGNORECASE)
+                    courses.update(matches)
+            
+            # If no courses identified, use a default
+            if not courses:
+                courses = {'通用课程'}
+            
+            # Create review items for each course mentioned
+            for course_name in courses:
+                content_id = f"course_{course_name}_{doc_date.strftime('%Y%m%d')}"
+                
+                # Skip if already exists
+                if content_id in self.review_schedules:
+                    continue
+                
+                # Extract week number or lesson info from body
+                week_match = re.search(r'week\s+(\d+)|\u7b2c(\d+)\u5468', body, re.IGNORECASE)
+                lesson_match = re.search(r'lesson\s+(\d+)|\u7b2c(\d+)\u8bfe', body, re.IGNORECASE)
+                
+                if week_match:
+                    week_num = week_match.group(1) or week_match.group(2)
+                    content_title = f"{course_name} - Week {week_num}"
+                    content_type = 'lesson'
+                elif lesson_match:
+                    lesson_num = lesson_match.group(1) or lesson_match.group(2)
+                    content_title = f"{course_name} - Lesson {lesson_num}"
+                    content_type = 'lesson'
+                else:
+                    content_title = f"{course_name} - Course Material"
+                    content_type = 'reading'
+                
+                # Add to review schedule
+                self.add_learning_content(
+                    content_id=content_id,
+                    content_title=content_title,
+                    content_summary=body[:150] if body else 'Course schedule received',
+                    learning_date=doc_date,
+                    course_name=course_name,
+                    content_type=content_type
+                )
+                
+                added_count += 1
+                logger.info(f"Added course review: {content_title}")
+        
+        return added_count
